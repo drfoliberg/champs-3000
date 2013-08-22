@@ -5,17 +5,15 @@
  * Modifié par
  * @author Justin Duplessis
  * 
- * @version v0.2.0 Seulement TextBox a été adapté aux changements
+ * @version v0.2.1 Ajout erreurs select input et suppression du champ ingorerSiVide
  * @todo Mettre à jour avec le nouveau format d'erreurs les autres Input que Text, ajouter l'option de différents formats de date, téléphone etc.
  * 
  * Publié sous la license MIT
+ * 
+ * Obtenez la dernière version https://github.com/drfoliberg/champs-3000/
  */
-
 interface Test {
 
-    /**
-     * test doit retourner 1 si il y a une erreur et 0 si il n'y en a pas.
-     */
     function test($text);
 }
 
@@ -209,14 +207,13 @@ class TextInput extends Input {
 
     //var $nom;
     var $validation;
-    var $ignorerSiVide;
     //var $value;
     var $valide;
     var $erreur;
     var $placeholder;
 
-    // ignorerSiVide: si vrai, les champs vides non seront pas testés et seront validés automatiquement
-    function __construct($nom, $tests = null, $erreur = true, $ignorerSiVide = false, $placeholder = null) {
+    
+    function __construct($nom, $tests = null, $erreur = true, $placeholder = null) {
         global $label;
         parent::__construct($nom);
         $this->validation = array();
@@ -225,7 +222,6 @@ class TextInput extends Input {
                 $this->validation[] = $test;
             }
         }
-        $this->ignorerSiVide = $ignorerSiVide;
         $this->erreur = $erreur;
         if ($placeholder == null && isset($label['placeholder_' . $this->nom])) {
             $this->placeholder = $label['placeholder_' . $this->nom];
@@ -237,18 +233,16 @@ class TextInput extends Input {
     }
 
     function valider() {
+        $this->erreurs = [];
+        $this->valide = true;
+        $this->erreur = false;
         if ($this->value !== null) {
-            if ($this->ignorerSiVide) {
-                if (strlen($this->value) == 0) {
-                    $this->valide = true;
-                    return true;
-                }
-            }
 
             foreach ($this->validation as $test) {
                 $err = $test->test($this->value);
                 if ($err['erreur']) {
                     $this->valide = false;
+                    $this->erreur = true;
                     $this->erreurs[] = $err;
                     return false;
                 }
@@ -267,9 +261,7 @@ class TextInput extends Input {
                 <?php
                 //if ($this->erreur === true) {
                 if ($this->erreur) {
-                    if ($this->value !== null && !$this->valider()) {
-                        $this->afficher_erreur();
-                    }
+                    $this->afficher_erreur();
                 }
                 ?>
             </div>
@@ -340,7 +332,11 @@ class SelectInput extends Input {
         $this->options[] = array($text, $value);
     }
 
-    function afficher() {
+    function setValue($v) {
+        $this->value = $v;
+    }
+
+    function afficher($erreur = false, $texteErr = "") {
         global $label;
         ?>
         <div class="control-group">
@@ -365,6 +361,11 @@ class SelectInput extends Input {
                     }
                     ?>
                 </select>
+                <?php
+                if ($erreur) {
+                    echo '<br><span class="text-error">' . $texteErr . '</span>';
+                }
+                ?>
             </div>
         </div>
         <?php
